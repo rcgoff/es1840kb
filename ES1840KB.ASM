@@ -1,7 +1,7 @@
 ;
-;L.Yadrennikov (RCgoff) disassembly of ES1840 keyboard firmware
+;L.Yadrennikov (RCgoff) disassembly of ES1840.C000 keyboard firmware
 ;The target is to fix the bug: on software reset from PC, if the keyb was in LAT mode before,
-;nor RUS, nor LAT leds won't on.
+;nor RUS, nor LAT leds won't on. See 'ledinit:' label.
 ;
 ;port 1 bit 0 - KBD CLK in
 ;port 1 bit 1 - KBD DATA in
@@ -188,13 +188,13 @@ frst_make:
        jmp     make_scode              ;copy keynum to r6 and put in FIFO buf
 ;
 ;
-;---------------------------here we are after x0150 or x0154, with scancode in r3 and buffer-top-adr in r0
+;---------------------------here we are after make_scode or get_scode, with scancode in r3 and buffer-top-adr in r0
 ;------buffer placement maintenance
 bufadr:        mov     a,@r0
        jz      bufwrt                  ;current buffer code=0? yes - place scancode here
        mov     a,r0                    ;no, get curbuff
        xrl     a,#3fh                  ;check if boundary achieved
-       jz      scanloop                ;achieved - thow code away and return to scan
+       jz      scanloop                ;achieved - throw code away and return to scan
        inc     r0                      ;no - next buff addr
        jmp     bufadr
 ;
@@ -321,7 +321,7 @@ tmr_typematic:
        mov     r2,a 
        sel     rb0 
        mov     a,r6 
-       mov     r3,a                    ;typematic->r3 (for x0154), 
+       mov     r3,a                    ;typematic->r3 (for get_scode), 
        jmp     get_scode               ;and put typematic MAKE code to buffer 
 ;
        org     130h
@@ -371,7 +371,7 @@ dc_done:
 make_scode: 
        mov     a,r7 
        mov     r6,a                    ;r7->r6 (for future typematic) 
-       mov     r3,a                    ;->r3 (for x0154, BREAK off) 
+       mov     r3,a                    ;->r3 (for get_scode, BREAK off) 
        clr     f0                      ;every real MAKE switch typematic off
  
 ;here we are after BREAK and TYPEMATIC timer 
@@ -622,7 +622,8 @@ stuck_cod:
        jmp     pc_out_2                ;outputs scan code of stucked key 
 ; 
        org     300h 
-; 
+;
+				       ;scan code table 
        db      0,1,2,3,4,5,6,7 
        db      8,9,0ah,0bh,0ch,0dh,2bh,0eh 
        db      0fh,10h,11h,12h,13h,14h,15h,16h 
